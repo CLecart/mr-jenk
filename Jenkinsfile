@@ -31,13 +31,11 @@ pipeline {
 
     /**
      * =========================================================================
-     * Configuration des outils
+     * Tooling
      * =========================================================================
+     * NOTE: Use Docker images for build tools (Maven/Node) to avoid requiring
+     * Jenkins Global Tool Configuration. This keeps the pipeline portable.
      */
-    tools {
-        maven 'Maven-3.9'      // Configuré dans Jenkins > Global Tool Configuration
-        nodejs 'NodeJS-20'     // Configuré dans Jenkins > Global Tool Configuration
-    }
 
     /**
      * =========================================================================
@@ -195,14 +193,14 @@ pipeline {
             steps {
                 echo "🔨 Construction du backend Java..."
                 
-                // Build Maven sans exécuter les tests
-                sh '''
-                    mvn clean package -DskipTests \
-                        -Dmaven.test.skip=true \
-                        -B -q
-                '''
-                
-                echo "✅ Build backend terminé"
+                        // Build using official Maven Docker image (no Jenkins tool required)
+                        script {
+                            docker.image('maven:3.9.3-eclipse-temurin-17').inside {
+                                sh 'mvn clean package -DskipTests -Dmaven.test.skip=true -B -q'
+                            }
+                        }
+
+                        echo "✅ Build backend terminé"
             }
             post {
                 success {
@@ -225,12 +223,15 @@ pipeline {
             steps {
                 echo "🔨 Construction du frontend Angular..."
                 
-                dir('frontend-angular') {
-                    // Installation des dépendances
-                    sh 'npm ci'
-                    
-                    // Build production
-                    sh 'npm run build -- --configuration=production'
+                // Use Node.js Docker image for frontend build
+                docker.image('node:20-alpine').inside {
+                    dir('frontend-angular') {
+                        // Installation des dépendances
+                        sh 'npm ci'
+
+                        // Build production
+                        sh 'npm run build -- --configuration=production'
+                    }
                 }
                 
                 echo "✅ Build frontend terminé"
@@ -262,11 +263,12 @@ pipeline {
             steps {
                 echo "🧪 Exécution des tests backend..."
                 
-                sh '''
-                    mvn test \
-                        -Dmaven.test.failure.ignore=false \
-                        -B
-                '''
+                // Run tests inside Maven Docker image
+                script {
+                    docker.image('maven:3.9.3-eclipse-temurin-17').inside {
+                        sh 'mvn test -Dmaven.test.failure.ignore=false -B'
+                    }
+                }
                 
                 echo "✅ Tests backend terminés"
             }
@@ -312,13 +314,11 @@ pipeline {
             steps {
                 echo "🧪 Exécution des tests frontend..."
                 
-                dir('frontend-angular') {
-                    sh '''
-                        npm run test -- \
-                            --watch=false \
-                            --browsers=ChromeHeadless \
-                            --code-coverage
-                    '''
+                // Run frontend tests inside Node Docker image
+                docker.image('node:20-alpine').inside {
+                    dir('frontend-angular') {
+                        sh 'npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage'
+                    }
                 }
                 
                 echo "✅ Tests frontend terminés"
@@ -363,12 +363,12 @@ pipeline {
             steps {
                 echo "🧪 Exécution des tests d'intégration..."
                 
-                sh '''
-                    mvn verify \
-                        -DskipUnitTests=true \
-                        -Dspring.profiles.active=test \
-                        -B
-                '''
+                // Run integration tests inside Maven Docker image
+                script {
+                    docker.image('maven:3.9.3-eclipse-temurin-17').inside {
+                        sh 'mvn verify -DskipUnitTests=true -Dspring.profiles.active=test -B'
+                    }
+                }
                 
                 echo "✅ Tests d'intégration terminés"
             }
