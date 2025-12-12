@@ -224,13 +224,15 @@ pipeline {
                 echo "🔨 Construction du frontend Angular..."
                 
                 // Use Node.js Docker image for frontend build
-                docker.image('node:20-alpine').inside {
-                    dir('frontend-angular') {
-                        // Installation des dépendances
-                        sh 'npm ci'
+                script {
+                    docker.image('node:20-alpine').inside {
+                        dir('frontend-angular') {
+                            // Installation des dépendances
+                            sh 'npm ci'
 
-                        // Build production
-                        sh 'npm run build -- --configuration=production'
+                            // Build production
+                            sh 'npm run build -- --configuration=production'
+                        }
                     }
                 }
                 
@@ -315,9 +317,11 @@ pipeline {
                 echo "🧪 Exécution des tests frontend..."
                 
                 // Run frontend tests inside Node Docker image
-                docker.image('node:20-alpine').inside {
-                    dir('frontend-angular') {
-                        sh 'npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage'
+                script {
+                    docker.image('node:20-alpine').inside {
+                        dir('frontend-angular') {
+                            sh 'npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage'
+                        }
                     }
                 }
                 
