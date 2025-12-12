@@ -1,0 +1,82 @@
+##############################################################################
+# Dockerfile - Jenkins Custom Image
+#
+# @description Image Jenkins avec Docker CLI, Maven, Node.js pré-installés
+# @author      MR-Jenk Team
+# @version     1.0.0
+##############################################################################
+
+FROM jenkins/jenkins:lts
+
+# Passer en root pour installer les dépendances
+USER root
+
+##############################################################################
+# Installation des outils de build
+##############################################################################
+
+# Mise à jour et installation des dépendances de base
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installation de Docker CLI
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installation de Maven
+ARG MAVEN_VERSION=3.9.6
+RUN curl -fsSL https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz | tar xzf - -C /opt \
+    && ln -s /opt/apache-maven-${MAVEN_VERSION} /opt/maven \
+    && ln -s /opt/maven/bin/mvn /usr/local/bin/mvn
+
+# Installation de Node.js (LTS)
+ARG NODE_VERSION=20
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installation des outils Angular CLI et Karma
+RUN npm install -g @angular/cli karma-cli
+
+##############################################################################
+# Configuration des permissions
+##############################################################################
+
+# Ajouter jenkins au groupe docker
+RUN groupadd -f docker && usermod -aG docker jenkins
+
+# Permettre à jenkins d'exécuter sudo sans mot de passe (pour debug uniquement)
+RUN echo "jenkins ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+##############################################################################
+# Variables d'environnement
+##############################################################################
+ENV MAVEN_HOME=/opt/maven
+ENV PATH="${MAVEN_HOME}/bin:${PATH}"
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=true"
+
+##############################################################################
+# Plugins Jenkins pré-installés
+##############################################################################
+USER jenkins
+
+# Liste des plugins essentiels
+COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt || true
+
+# Retour à root pour le runtime (nécessaire pour Docker socket)
+USER root
+
+##############################################################################
+# Point d'entrée
+##############################################################################
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
