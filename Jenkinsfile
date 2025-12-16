@@ -522,13 +522,22 @@ pipeline {
          * Toujours exécuté
          */
         always {
-            echo "🧹 Nettoyage du workspace..."
-            
-            // Nettoyage des images Docker locales (optionnel)
-            sh 'docker system prune -f || true'
-            
-            // Nettoyage du workspace Jenkins
-            cleanWs()
+            // Le bloc 'post' s'exécute hors d'un contexte 'node'.
+            // Pour exécuter des steps comme 'sh' ou 'cleanWs' qui
+            // nécessitent un workspace, on ouvre explicitement un
+            // bloc 'node'. Utiliser le label 'agent-1' pour garantir
+            // que le nettoyage s'effectue sur l'agent dédié.
+            script {
+                node('agent-1') {
+                    echo "🧹 Nettoyage du workspace..."
+
+                    // Nettoyage des images Docker locales (optionnel)
+                    sh 'docker system prune -f || true'
+
+                    // Nettoyage du workspace Jenkins
+                    cleanWs()
+                }
+            }
         }
 
         /**
