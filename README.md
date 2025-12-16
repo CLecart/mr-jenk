@@ -147,9 +147,40 @@ ngrok http 8080
 
 ---
 
-                    │
-          ┌───────────────┼───────────────┐
-          ▼               ▼               ▼
+The small ASCII arrows in the previous diagram were only a visual split showing that a successful "Deploy" step typically targets multiple environments (DEV / STAGING / PROD).
+
+If your repository's webhook cannot reach `http://localhost:8080` (common when running Jenkins locally), do one of the following:
+
+Option A — Expose Jenkins with ngrok (recommended for local testing)
+1. Start ngrok on the host where Jenkins runs:
+
+```bash
+ngrok http 8080
+```
+
+2. Copy the HTTPS forwarding URL shown by ngrok (example: `https://abcd-12-34-56.ngrok.io`).
+3. In Jenkins: Manage Jenkins → Configure System → `Jenkins URL` set to your ngrok URL (include trailing slash).
+4. In your Git host (GitHub/Gitea) create/update the webhook to point to the correct endpoint:
+    - GitHub plugin: `https://<ngrok>/github-webhook/`
+    - Gitea plugin: `https://<ngrok>/gitea-webhook/`
+
+5. Test delivery (Git host webhook test UI or use curl):
+
+```bash
+# GitHub-style test payload
+curl -v -X POST "https://abcd-12-34-56.ngrok.io/github-webhook/" \
+   -H "Content-Type: application/json" \
+   -H "X-GitHub-Event: push" \
+   -d '{"ref":"refs/heads/main","repository":{"full_name":"you/your-repo"}}'
+```
+
+Option B — Start Jenkins on a public host or configure a reverse proxy
+- Run Jenkins on a server reachable from the internet, or add a reverse proxy that forwards a public URL to `localhost:8080`.
+
+Option C — Use `git notifyCommit` (simple polling trigger)
+- If webhooks are not possible, add a lightweight notifyCommit URL in the webhook: `https://<public>/git/notifyCommit?url=<repo_clone_url>` which triggers polling-based builds.
+
+---
 
 Or start manually:
 
