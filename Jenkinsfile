@@ -528,15 +528,22 @@ pipeline {
             // bloc 'node'. Utiliser le label 'agent-1' pour garantir
             // que le nettoyage s'effectue sur l'agent dédié.
             script {
-                node('agent-1') {
-                    echo "🧹 Nettoyage du workspace..."
+                                node('agent-1') {
+                                        echo "🧹 Nettoyage du workspace..."
 
-                    // Nettoyage des images Docker locales (optionnel)
-                    sh 'docker system prune -f || true'
+                                        // Nettoyage des images Docker locales (optionnel)
+                                        // Guard against agents that don't have the docker CLI installed
+                                        sh '''
+                                                if command -v docker >/dev/null 2>&1; then
+                                                    docker system prune -f || true
+                                                else
+                                                    echo "docker CLI not available on this agent - skipping docker prune"
+                                                fi
+                                        '''
 
-                    // Nettoyage du workspace Jenkins
-                    cleanWs()
-                }
+                                        // Nettoyage du workspace Jenkins
+                                        cleanWs()
+                                }
             }
         }
 
@@ -545,13 +552,20 @@ pipeline {
          */
         success {
             echo "✅ Pipeline terminé avec succès!"
-            
+
             script {
-                // Notification email de succès
-                sendEmailNotification('SUCCESS')
-                
-                // Notification Slack de succès
-                sendSlackNotification('SUCCESS')
+                // Wrap notifications to avoid notification failures failing the build
+                try {
+                    sendEmailNotification('SUCCESS')
+                } catch (Exception e) {
+                    echo "Warning: email notification failed: ${e.message}"
+                }
+
+                try {
+                    sendSlackNotification('SUCCESS')
+                } catch (Exception e) {
+                    echo "Warning: slack notification failed: ${e.message}"
+                }
             }
         }
 
@@ -562,11 +576,17 @@ pipeline {
             echo "❌ Pipeline en échec!"
             
             script {
-                // Notification email d'échec
-                sendEmailNotification('FAILURE')
-                
-                // Notification Slack d'échec
-                sendSlackNotification('FAILURE')
+                try {
+                    sendEmailNotification('FAILURE')
+                } catch (Exception e) {
+                    echo "Warning: email notification failed: ${e.message}"
+                }
+
+                try {
+                    sendSlackNotification('FAILURE')
+                } catch (Exception e) {
+                    echo "Warning: slack notification failed: ${e.message}"
+                }
             }
         }
 
@@ -577,8 +597,17 @@ pipeline {
             echo "⚠️ Pipeline instable!"
             
             script {
-                sendEmailNotification('UNSTABLE')
-                sendSlackNotification('UNSTABLE')
+                try {
+                    sendEmailNotification('UNSTABLE')
+                } catch (Exception e) {
+                    echo "Warning: email notification failed: ${e.message}"
+                }
+
+                try {
+                    sendSlackNotification('UNSTABLE')
+                } catch (Exception e) {
+                    echo "Warning: slack notification failed: ${e.message}"
+                }
             }
         }
 
@@ -589,7 +618,11 @@ pipeline {
             echo "🛑 Pipeline annulé"
             
             script {
-                sendSlackNotification('ABORTED')
+                try {
+                    sendSlackNotification('ABORTED')
+                } catch (Exception e) {
+                    echo "Warning: slack notification failed: ${e.message}"
+                }
             }
         }
     }
@@ -826,6 +859,7 @@ def sendSlackNotification(String status) {
     ][status] ?: 'Status inconnu'
     
     slackSend(
+        tokenCredentialId: 'slack-webhook',
         channel: '#ci-notifications',
         color: color,
         message: """
