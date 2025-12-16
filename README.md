@@ -23,6 +23,25 @@ This repository provides:
 
 ## Table of contents
 
+---
+
+# mr-jenk — Jenkins CI/CD scaffold
+
+[![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-red?logo=jenkins)](https://www.jenkins.io/) [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+Hardened, auditable Jenkins CI/CD scaffold for local development and testing.
+
+This repository provides:
+
+- A declarative `Jenkinsfile` pipeline for controller + agents
+- A Docker Compose setup to run a local Jenkins controller and optional agents
+- Idempotent Groovy scripts to provision credentials and basic security configuration
+- Helper scripts to start Jenkins and configure tools
+
+---
+
+## Table of contents
+
 - [Goals](#goals)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
@@ -51,15 +70,12 @@ Simple overview (controller coordinates pipeline stages; agents run build steps)
 
 ```
 Jenkins Controller
-  ├─ Checkout (Git)
-  ├─ Build (Maven / npm)
-  ├─ Test (JUnit / Karma)
-  ├─ Build Docker image
-  ├─ Deploy to target
-  └─ Notify (email / Slack)
+  ├─ Orchestrates: Checkout → Build → Test → Docker build → Deploy → Notify
+  └─ Delegates build/test work to Agent(s)
 
-Optional distributed agents perform the build/test stages.
-Deploy targets: DEV, STAGING, PROD
+Agents: execute build/test steps (Java, Node, Docker builds, etc.)
+
+Deploy flow: DEV → STAGING → PROD
 ```
 
 ---
@@ -180,29 +196,6 @@ Notes:
 ## License
 
 MIT — see `LICENSE`.
-
-./scripts/start-jenkins.sh
-
-````
-
-Ou manuellement :
-
-```bash
-docker compose build
-docker compose up -d
-````
-
-### 4. Récupérer le mot de passe initial
-
-```bash
-docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-```
-
-### 5. Accéder à Jenkins
-
-Ouvrir http://localhost:8080 et suivre l'assistant de configuration.
-
----
 
 ## ⚙️ Configuration
 
