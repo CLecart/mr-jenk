@@ -1,569 +1,196 @@
-# MR-Jenk — CI/CD Pipeline with Jenkins
-
-[![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-red?logo=jenkins)](https://www.jenkins.io/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-
-> Complete CI/CD pipeline for the `buy-01` e-commerce project using Jenkins, Docker, Maven and Angular.
-
----
-
-## Table of Contents
-
-- [Goals](#goals)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Audit & Compliance](#audit--compliance)
-- [Troubleshooting](#troubleshooting)
-
----
-
-Or manually:
-docker compose build
-
-_MR-Jenk project — CI/CD with Jenkins for Zone01 module_
-
-Or run the provisioning script in the Script Console:
-
-```groovy
-// Jenkins > Manage Jenkins > Script Console
-// Paste the contents of scripts/setup-credentials.groovy
-```
-
-### Configure tools
-
-In Jenkins > Manage Jenkins > Global Tool Configuration:
-
-- Maven: name `Maven-3.9`, install automatically
-- NodeJS: name `NodeJS-20`, install automatically
-
-### Create the Pipeline job
-
-1. New Item > Name: `buy-01-pipeline` > Type: Pipeline
-2. Build Triggers: Check `GitHub hook trigger for GITScm polling`
-3. Pipeline:
-   - Definition: `Pipeline script from SCM`
-   - SCM: `Git`
-   - Repository URL: `https://github.com/your-username/buy-01.git`
-   - Credentials: `github-token`
-   - Branch: `*/main`
-   - Script Path: `Jenkinsfile`
-
----
-
-## Usage
-
-### Trigger a manual build
-
-Jenkins > `buy-01-pipeline` > Build with Parameters
-
-Select options:
-
-- `ENVIRONMENT`: dev / staging / prod
-- `RUN_TESTS`: true / false
-- `DEPLOY`: true / false
-
-### Useful Docker commands
-
-```bash
-docker logs -f jenkins
-docker compose restart jenkins
-docker compose down
-docker compose --profile distributed up -d
-```
-
----
-
-## Project structure
-
-```
-mr-jenk/
-├── Jenkinsfile
-├── docker-compose.yml
-├── Dockerfile.jenkins
-├── plugins.txt
-├── .env.example
-├── .gitignore
-├── README.md
-├── CONVERSATION_SUMMARY.md
-└── scripts/
-    ├── start-jenkins.sh
-    ├── configure-security.groovy
-    └── setup-credentials.groovy
-```
-
----
-
-## Audit & Compliance
-
-### Functional checklist
-
-| Test          | Action/Command         | Expected result            |
-| ------------- | ---------------------- | -------------------------- |
-| Full pipeline | Build with Parameters  | All stages succeed ✅      |
-| Build failure | Introduce a Java error | Pipeline fails at Build ❌ |
-| Test failure  | Fail a test            | Pipeline fails at Test ❌  |
-
-### Security checklist
-
-| Item        | Verification                                    |
-| ----------- | ----------------------------------------------- |
-| Permissions | Users have appropriate roles (Admin/Dev/Viewer) |
-| Secrets     | All secrets stored in Jenkins Credentials       |
-| Logs        | No secrets visible in console logs              |
-| CSRF        | Protection enabled                              |
-
----
-
-## Troubleshooting
-
-### Jenkins won't start
-
-```bash
-docker logs jenkins
-docker stats jenkins
-docker compose down -v
-docker compose up -d
-```
-
-### Docker permissions
-
-```bash
-docker exec -u root jenkins usermod -aG docker jenkins
-docker compose restart jenkins
-```
-
-### Webhook not working
-
-Use ngrok to expose localhost if required:
-
-```bash
-ngrok http 8080
-```
-
----
-
-The small ASCII arrows in the previous diagram were only a visual split showing that a successful "Deploy" step typically targets multiple environments (DEV / STAGING / PROD).
-
-If your repository's webhook cannot reach `http://localhost:8080` (common when running Jenkins locally), do one of the following:
-
-Option A — Expose Jenkins with ngrok (recommended for local testing)
-1. Start ngrok on the host where Jenkins runs:
-
-```bash
-ngrok http 8080
-```
-
-2. Copy the HTTPS forwarding URL shown by ngrok (example: `https://abcd-12-34-56.ngrok.io`).
-3. In Jenkins: Manage Jenkins → Configure System → `Jenkins URL` set to your ngrok URL (include trailing slash).
-4. In your Git host (GitHub/Gitea) create/update the webhook to point to the correct endpoint:
-    - GitHub plugin: `https://<ngrok>/github-webhook/`
-    - Gitea plugin: `https://<ngrok>/gitea-webhook/`
-
-5. Test delivery (Git host webhook test UI or use curl):
-
-```bash
-# GitHub-style test payload
-curl -v -X POST "https://abcd-12-34-56.ngrok.io/github-webhook/" \
-   -H "Content-Type: application/json" \
-   -H "X-GitHub-Event: push" \
-   -d '{"ref":"refs/heads/main","repository":{"full_name":"you/your-repo"}}'
-```
-
-Option B — Start Jenkins on a public host or configure a reverse proxy
-- Run Jenkins on a server reachable from the internet, or add a reverse proxy that forwards a public URL to `localhost:8080`.
-
-Option C — Use `git notifyCommit` (simple polling trigger)
-- If webhooks are not possible, add a lightweight notifyCommit URL in the webhook: `https://<public>/git/notifyCommit?url=<repo_clone_url>` which triggers polling-based builds.
-
----
-
-Or start manually:
-
-## 📁 Project structure
-
-mr-jenk/
-
-# MR-Jenk — CI/CD Pipeline with Jenkins
-
-[![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-red?logo=jenkins)](https://www.jenkins.io/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-
-> Complete CI/CD pipeline for the `buy-01` e-commerce project using Jenkins, Docker, Maven and Angular.
-
----
-
-## Table of Contents
-
-- [Goals](#goals)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Audit & Compliance](#audit--compliance)
-- [Troubleshooting](#troubleshooting)
-
----
-
-## 🎯 Goals
-
-This project implements a complete CI/CD pipeline with the following features:
-
-| Feature                 | Status   | Description                                           |
-| ----------------------- | -------- | ----------------------------------------------------- |
-| ✅ Jenkins setup        | Complete | Docker-based installation with pre-configured plugins |
-| ✅ CI/CD pipeline       | Complete | Declarative `Jenkinsfile` with multiple stages        |
-| ✅ Automated tests      | Complete | JUnit (backend) + Karma (frontend)                    |
-| ✅ Auto-trigger         | Complete | GitHub webhook + SCM polling                          |
-| ✅ Deployment           | Complete | Multi-environment (dev/staging/prod)                  |
-| ✅ Rollback             | Complete | Automatic rollback strategy on failure                |
-| ✅ Notifications        | Complete | Email + Slack                                         |
-| ✅ Security             | Complete | Encrypted credentials, RBAC, CSRF                     |
-| ✅ Parameterized Builds | Bonus    | Environment selection and build options               |
-| ✅ Distributed Builds   | Bonus    | Multi-agent support                                   |
-
----
-
-## 🏗 Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              JENKINS SERVER                                     │
-│  ┌────────────────────────────────────────────────────────────────────────────┐ │
-│  │                             Pipeline Stages                                 │ │
-│  │                                                                            │ │
-│  │  ┌──────────┐  ┌───────┐  ┌──────┐  ┌────────┐  ┌────────┐  ┌────────┐      │ │
-│  │  │ Checkout │→ │ Build │→ │ Test │→ │ Docker │→ │ Deploy │→ │ Notify │      │ │
-│  │  └──────────┘  └───────┘  └──────┘  └────────┘  └────────┘  └────────┘      │ │
-│  └────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐                                     │
-│  │ Agent 1  │   │ Agent 2  │   │ Agent N  │   (optional distributed agents)      │
-│  └──────────┘   └──────────┘   └──────────┘                                     │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                           │
-              ┌────────────┴────────────┐
-              │       Deploy / Fork      │
-   ┌──────────▼────────┐  ┌──────▼──────┐  ┌────────▼───────┐
-   │       DEV          │  │   STAGING   │  │     PROD       │
-   └────────────────────┘  └─────────────┘  └────────────────┘
-```
-
----
-
-## 📦 Prerequisites
-
-- **Docker** >= 20.10
-- **Docker Compose** >= 2.0
-- **Git**
-- **8 GB RAM** minimum (Jenkins + builds)
-- **Open ports**: 8080 (Jenkins), 50000 (Agents)
-
-### Check prerequisites
-
-```bash
-# Docker
-3. Use the ngrok URL for the GitHub webhook
-
-# Docker Compose
-
-
-# Git
-### ChromeHeadless test failures
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. Clone the repository
-
-```bash
-
-cd mr-jenk
-```
-
-### 2. Configure environment variables
-
-```bash
-cp .env.example .env
-nano .env  # Edit with your values
-```
-
-### 3. Start Jenkins
-
-```bash
-./scripts/start-jenkins.sh
-```
-
-Or manually:
-
-````bash
-```bash
-````
-
----
-
-## Configuration
-
-Run the provisioning script in the Jenkins Script Console to create credentials from controller environment variables (idempotent):
-
-```groovy
-// Jenkins > Manage Jenkins > Script Console
-// Paste the contents of scripts/setup-credentials.groovy
-```
-
-Also configure global tools in Jenkins > Manage Jenkins > Global Tool Configuration:
-
-- Maven: name `Maven-3.9`, install automatically
-- NodeJS: name `NodeJS-20`, install automatically
-
----
-
-## Usage
-
-### Trigger a manual build
-
-Jenkins > `buy-01-pipeline` > Build with Parameters
-
-Select options:
-
-- `ENVIRONMENT`: dev / staging / prod
-- `RUN_TESTS`: true / false
-- `DEPLOY`: true / false
-
----
-
-## Project structure
-
-```
-mr-jenk/
-├── Jenkinsfile
-├── docker-compose.yml
-├── Dockerfile.jenkins
-├── plugins.txt
-├── .env.example
-├── .gitignore
-├── README.md
-├── CONVERSATION_SUMMARY.md
-└── scripts/
-   ├── start-jenkins.sh
-   ├── configure-security.groovy
-   └── setup-credentials.groovy
-```
-
----
-
-## Audit & Compliance
-
-### Functional checklist
-
-| Test          | Action/Command         | Expected result            |
-| ------------- | ---------------------- | -------------------------- |
-| Full pipeline | Build with Parameters  | All stages succeed ✅      |
-| Build failure | Introduce a Java error | Pipeline fails at Build ❌ |
-| Test failure  | Fail a test            | Pipeline fails at Test ❌  |
-
-### Security checklist
-
-| Item        | Verification                                    |
-| ----------- | ----------------------------------------------- |
-| Permissions | Users have appropriate roles (Admin/Dev/Viewer) |
-| Secrets     | All secrets stored in Jenkins Credentials       |
-| Logs        | No secrets visible in console logs              |
-| CSRF        | Protection enabled                              |
-
----
-
-## Troubleshooting
-
-### Jenkins won't start
-
-```bash
-# Ensure Chrome is installed in the image
 docker exec jenkins google-chrome --version
-```
-
-````
-
-### Docker permissions
-
-```bash
----
-
-````
-
-### Webhook not working
-
-Use ngrok to expose localhost if required:
-
-```bash
-ngrok http 8080
-```
-
----
-
-## Resources
-
-- https://www.jenkins.io/doc/
-- https://www.jenkins.io/doc/book/pipeline/syntax/
-- https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/
-
----
-
-## License
-
-MIT License - See LICENSE for details.
-
-## 📚 Resources
-
-- [Jenkins Documentation](https://www.jenkins.io/doc/)
-- [Pipeline Syntax Reference](https://www.jenkins.io/doc/book/pipeline/syntax/)
-- [Jenkins Best Practices](https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/)
-- [CONVERSATION_SUMMARY.md](CONVERSATION_SUMMARY.md) — Detailed project notes
-
----
-
-## 📝 License
-
-MIT License - See [LICENSE](LICENSE) for details.
-
----
-
-_MR-Jenk project — CI/CD with Jenkins for Zone01 module_
-
-````
-
-# MR-Jenk — CI/CD Pipeline avec Jenkins
-
-[![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-red?logo=jenkins)](https://www.jenkins.io/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-
-> Pipeline CI/CD complet pour le projet e-commerce **buy-01** utilisant Jenkins, Docker, Maven et Angular.
-
----
-
-## 📋 Table des matières
-
-- [Objectifs](#-objectifs)
-- [Architecture](#-architecture)
-- [Prérequis](#-prérequis)
-- [Installation rapide](#-installation-rapide)
-- [Configuration](#-configuration)
-- [Utilisation](#-utilisation)
-- [Structure du projet](#-structure-du-projet)
-- [Audit & Conformité](#-audit--conformité)
-- [Troubleshooting](#-troubleshooting)
-
----
-
-## 🎯 Objectifs
-
-Ce projet implémente un pipeline CI/CD complet avec les fonctionnalités suivantes :
-
-| Fonctionnalité          | Status  | Description                                         |
-| ----------------------- | ------- | --------------------------------------------------- |
-| ✅ Setup Jenkins        | Complet | Installation via Docker avec plugins pré-configurés |
-| ✅ Pipeline CI/CD       | Complet | Jenkinsfile déclaratif avec stages multiples        |
-| ✅ Tests automatisés    | Complet | JUnit (backend) + Karma (frontend)                  |
-| ✅ Auto-trigger         | Complet | Webhook GitHub + polling SCM                        |
-| ✅ Déploiement          | Complet | Multi-environnements (dev/staging/prod)             |
-| ✅ Rollback             | Complet | Stratégie automatique en cas d'échec                |
-| ✅ Notifications        | Complet | Email + Slack                                       |
-| ✅ Sécurité             | Complet | Credentials chiffrés, RBAC, CSRF                    |
-| ✅ Parameterized Builds | Bonus   | Choix d'environnement et options                    |
-| ✅ Distributed Builds   | Bonus   | Support multi-agents                                |
-
----
-
-## 🏗 Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              JENKINS SERVER                                  │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │                         Pipeline Stages                                  │ │
-│  │                                                                          │ │
-│  │  ┌──────────┐  ┌───────┐  ┌──────┐  ┌────────┐  ┌────────┐  ┌────────┐ │ │
-│  │  │ Checkout │→ │ Build │→ │ Test │→ │ Docker │→ │ Deploy │→ │ Notify │ │ │
-│  │  │   (Git)  │  │(Maven │  │(JUnit│  │ Build  │  │        │  │(Email/ │ │ │
-│  │  │          │  │ /npm) │  │Karma)│  │        │  │        │  │ Slack) │ │ │
-│  │  └──────────┘  └───────┘  └──────┘  └────────┘  └────────┘  └────────┘ │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐                 │
-│  │    Agent 1     │  │    Agent 2     │  │    Agent N     │  (Bonus)        │
-│  └────────────────┘  └────────────────┘  └────────────────┘                 │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┼───────────────┐
-                    ▼               ▼               ▼
-              ┌──────────┐   ┌──────────┐   ┌──────────┐
-              │   DEV    │   │ STAGING  │   │   PROD   │
-              └──────────┘   └──────────┘   └──────────┘
-```
-
----
-
-## 📦 Prérequis
-
-- **Docker** >= 20.10
-- **Docker Compose** >= 2.0
-- **Git**
-- **8 GB RAM** minimum (Jenkins + builds)
-- **Ports libres** : 8080 (Jenkins), 50000 (Agents)
 
 ### Vérifier les prérequis
 
-```bash
 # Docker
-docker --version
 
 # Docker Compose
-docker compose version
 
-# Git
+# mr-jenk — Jenkins CI/CD scaffold
+
+[![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-red?logo=jenkins)](https://www.jenkins.io/) [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+Hardened, auditable Jenkins CI/CD scaffold for local development and testing.
+
+This repository provides:
+
+- A declarative `Jenkinsfile` pipeline for controller + agents.
+- A Docker Compose setup to run a local Jenkins controller and optional agents.
+- Idempotent Groovy scripts to provision credentials and basic security configuration.
+- Helper scripts to start Jenkins and configure tools.
+
+---
+
+## Table of contents
+
+- [Goals](#goals)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Project structure](#project-structure)
+- [Webhooks / Local testing](#webhooks--local-testing)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+---
+
+## Goals
+
+Provide a minimal, auditable Jenkins CI/CD scaffold for:
+
+- Local pipeline development and validation
+- Secure provisioning patterns (Jenkins Credentials)
+- Multi-agent / distributed build workflows
+
+---
+
+## Architecture
+
+Simple overview (controller coordinates pipeline stages; agents run build steps):
+
+```
+Jenkins Controller
+  ├─ Checkout (Git)
+  ├─ Build (Maven / npm)
+  ├─ Test (JUnit / Karma)
+  ├─ Build Docker image
+  ├─ Deploy to target
+  └─ Notify (email / Slack)
+
+Optional distributed agents perform the build/test stages.
+Deploy targets: DEV, STAGING, PROD
+```
+
+---
+
+## Prerequisites
+
+- Docker >= 20.10
+- Docker Compose >= 2.0
+- Git
+- Minimum 8 GB RAM for local runs
+- Open ports: `8080` (Jenkins), `50000` (agents)
+
+Check prerequisites:
+
+```bash
+docker --version
+docker compose version
 git --version
 ```
 
 ---
 
-## 🚀 Installation rapide
-
-### 1. Cloner le projet
+## Quick start
 
 ```bash
 git clone https://github.com/your-username/mr-jenk.git
 cd mr-jenk
-```
-
-### 2. Configurer les variables d'environnement
-
-```bash
-cp .env.example .env
-nano .env  # Éditer avec vos valeurs
-```
-
-### 3. Démarrer Jenkins
-
-```bash
+cp .env.example .env    # edit .env with your values
 ./scripts/start-jenkins.sh
 ```
+
+Open http://localhost:8080 and follow the setup wizard. To retrieve the initial admin password:
+
+```bash
+docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+---
+
+## Configuration
+
+1. Provision credentials (recommended manual audit):
+
+   - In Jenkins: **Manage Jenkins > Credentials**, add required credentials (see `scripts/setup-credentials.groovy` for IDs used by the pipeline).
+   - For audited environments prefer creating credentials via the Jenkins UI so the action is logged.
+
+2. Optional: run the idempotent provisioning script from **Manage Jenkins > Script Console** if you understand the security implications and supply credentials via the controller environment.
+
+```groovy
+// Jenkins > Manage Jenkins > Script Console
+// Paste the contents of scripts/setup-credentials.groovy
+```
+
+3. Configure global tools: **Manage Jenkins > Global Tool Configuration**
+
+- Maven: name `Maven-3.9` (install automatically)
+- NodeJS: name `NodeJS-20` (install automatically)
+
+4. Create the pipeline job (example):
+
+- New Item → Name: `mr-jenk-pipeline` → Type: Pipeline
+- Definition: `Pipeline script from SCM`
+- SCM: Git, Repository: your repo URL, Branch: `*/main`
+- Script Path: `Jenkinsfile`
+
+---
+
+## Project structure
+
+```
+mr-jenk/
+├── Jenkinsfile                 # declarative pipeline
+├── docker-compose.yml          # dev setup for controller (+ optional agents)
+├── Dockerfile.jenkins          # custom Jenkins image
+├── plugins.txt                 # plugins to pre-install
+├── .env.example                # environment variables template
+├── scripts/
+│   ├── start-jenkins.sh        # start helper
+│   ├── configure-security.groovy
+│   └── setup-credentials.groovy
+├── README.md
+└── CONVERSATION_SUMMARY.md
+```
+
+Keep secrets out of the repo. The `scripts/setup-credentials.groovy` expects environment variables when run on the controller; prefer UI creation for auditability.
+
+---
+
+## Webhooks / Local testing (ngrok)
+
+If your Git host cannot reach `http://localhost:8080` during local development, expose Jenkins with ngrok for webhook testing:
+
+1. Install ngrok and run it on the Jenkins port:
+
+```bash
+ngrok http 8080
+```
+
+2. Copy the HTTPS forwarding URL (example: `https://abcd.ngrok.io`) and set Jenkins' root URL: **Manage Jenkins > Configure System > Jenkins URL** → `https://abcd.ngrok.io/`
+
+3. Add a webhook in your Git host pointing to `https://abcd.ngrok.io/github-webhook/` (GitHub) or the appropriate endpoint for other hosts.
+
+Notes:
+
+- Ngrok is for local testing only. Do not use a public tunneling service for production.
+- For CI/CD in production, use a publicly reachable Jenkins endpoint or a properly configured reverse proxy/load-balancer.
+
+---
+
+## Troubleshooting (short)
+
+- View Jenkins logs: `docker logs -f jenkins`
+- Restart: `docker compose restart jenkins`
+- Ensure agents have required tooling (Docker CLI, Java, Node) depending on pipeline stages.
+
+---
+
+## License
+
+MIT — see `LICENSE`.
+
+./scripts/start-jenkins.sh
+
+````
 
 Ou manuellement :
 
 ```bash
 docker compose build
 docker compose up -d
-```
+````
 
 ### 4. Récupérer le mot de passe initial
 
@@ -777,7 +404,7 @@ docker compose version
 
 # Git
 git --version
-````
+```
 
 ---
 
