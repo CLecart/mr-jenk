@@ -1,7 +1,7 @@
 ##############################################################################
 # Docker Compose - Jenkins CI/CD Server
 #
-# @description Configuration Docker pour Jenkins avec support Docker-in-Docker
+# @description Docker configuration for Jenkins with Docker-in-Docker support
 # @author      MR-Jenk Team
 # @version     1.0.0
 # @see         https://www.jenkins.io/doc/book/installing/docker/
@@ -11,7 +11,7 @@ services:
   ##############################################################################
   # Jenkins Master Server
   #
-  # Utilise une image custom pour avoir Docker CLI disponible dans Jenkins
+  # Uses a custom image to provide the Docker CLI inside Jenkins
   ##############################################################################
   jenkins:
     build:
@@ -21,12 +21,12 @@ services:
     privileged: true
     user: root
     ports:
-      - "8080:8080" # Interface web Jenkins
-      - "50000:50000" # Port pour les agents JNLP
+      - "8080:8080" # Jenkins web interface
+      - "50000:50000" # JNLP agent port
     volumes:
-      # Persistance des données Jenkins
+      # Jenkins data persistence
       - jenkins_home:/var/jenkins_home
-      # Docker socket pour Docker-in-Docker (build d'images)
+      # Docker socket for Docker-in-Docker (image builds)
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       # Options JVM pour Jenkins
@@ -42,9 +42,9 @@ services:
       start_period: 60s
 
   ##############################################################################
-  # Jenkins Agent (Bonus: Distributed Builds)
+  # Jenkins Agent (optional: Distributed Builds)
   #
-  # Agent supplémentaire pour builds parallèles
+  # Additional agent for parallel builds
   ##############################################################################
   jenkins-agent:
     image: jenkins/inbound-agent:latest
@@ -54,7 +54,7 @@ services:
     environment:
       - JENKINS_URL=http://jenkins:8080
       - JENKINS_AGENT_NAME=agent-1
-      # Le secret sera configuré via Jenkins UI après setup initial
+      # The secret will be set via the Jenkins UI after initial setup
       - JENKINS_SECRET=${JENKINS_AGENT_SECRET:-}
       - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
     volumes:
@@ -67,7 +67,7 @@ services:
       - distributed # Activer avec: docker-compose --profile distributed up
 
 ##############################################################################
-# Volumes persistants
+# Persistent volumes
 ##############################################################################
 volumes:
   jenkins_home:
@@ -76,7 +76,7 @@ volumes:
     name: jenkins_agent_workspace
 
 ##############################################################################
-# Réseau isolé pour Jenkins
+# Isolated network for Jenkins
 ##############################################################################
 networks:
   jenkins-network:
