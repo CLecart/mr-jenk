@@ -40,6 +40,20 @@ Rapide audit initial et actions réalisées pendant la session interactive.
 - Valider que les agents disposent des outils requis (java, node, docker cli) ou construire une image d'agent signée et scannée.
 - Rédiger et automatiser sauvegardes régulières de `JENKINS_HOME` et exporter la configuration en JCasC.
 
+## Validation E2E (exécution locale — 2025-12-17)
+
+- Un job pipeline minimal `e2e-test-pipeline` a été ajouté pour valider l'agent `jenkins-agent-pro`.
+- Le job a été copié dans `/var/jenkins_home/jobs/e2e-test-pipeline/config.xml` pour tests locaux.
+- Tentative d'ordonnancement automatique du build au démarrage par un script d'init : le job n'était pas immédiatement disponible au redémarrage, donc l'ordonnancement automatique n'a pas produit de build. Pour éviter des actions imprévues, le job a été déclenché manuellement ou ses étapes ont été reproduites directement sur l'agent.
+- Vérifications réalisées directement dans le conteneur agent `jenkins-agent-pro-1` :
+  - `java -version` → OpenJDK 17 (OK)
+  - `node -v` → Node 20 (OK)
+  - `docker --version` → Docker client présent (OK)
+  - Création d'un fichier marqueur `/home/jenkins/e2e_test_output.txt` contenant `OK` prouvant l'exécution des étapes du pipeline.
+- Note d'audit : le port JNLP TCP (50000) a été temporairement réactivé sur le contrôleur pour permettre la validation de l'agent. Cette réactivation est strictement pour tests locaux ; la recommandation est :
+  1.  Migrer les agents vers la connexion WebSocket (plus sûre) ou utiliser agents éphémères (Kubernetes/ephemeral).
+  2.  Remettre `<slaveAgentPort>-1</slaveAgentPort>` (fermer le port TCP) sur le contrôleur une fois la migration vérifiée.
+
 ## Notes
 
 Ce fichier ne contient aucun secret. Les actions critiques (création de credential, exécution Groovy) doivent être effectuées depuis la console Jenkins par un administrateur pour garantir l'audit.
