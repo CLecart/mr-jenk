@@ -79,7 +79,7 @@ services:
       - jenkins
     environment:
       - JENKINS_URL=http://jenkins:8080
-      - JENKINS_AGENT_NAME=agent-pro-1
+      - JENKINS_AGENT_NAME=jenkins-agent-pro
       - JENKINS_SECRET=${JENKINS_AGENT_PRO_SECRET:-}
       - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
     volumes:
@@ -91,6 +91,24 @@ services:
     profiles:
       - distributed
 
+  ##########################################################################
+  # Development MongoDB (optional)
+  # Lightweight local MongoDB service for development / manual testing.
+  # Exposed on host port 27017. Use only for local dev; CI should use Testcontainers.
+  ##########################################################################
+  mongo:
+    image: mongo:6.0
+    container_name: mrjenk-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - jenkins-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
 ##############################################################################
 # Persistent volumes
 ##############################################################################
@@ -99,6 +117,8 @@ volumes:
     name: jenkins_home
   agent_workspace:
     name: jenkins_agent_workspace
+  mongo_data:
+    name: mrjenk_mongo_data
 
 ##############################################################################
 # Isolated network for Jenkins
