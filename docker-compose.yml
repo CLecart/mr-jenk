@@ -66,6 +66,31 @@ services:
     profiles:
       - distributed # Activer avec: docker-compose --profile distributed up
 
+  ##########################################################################
+  # Jenkins Agent (development/provisioned)
+  # Builds a custom agent image with JDK, Node and Docker CLI for local builds
+  ##########################################################################
+  jenkins-agent-pro:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    container_name: jenkins-agent-pro-1
+    depends_on:
+      - jenkins
+    environment:
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_AGENT_NAME=agent-pro-1
+      - JENKINS_SECRET=${JENKINS_AGENT_PRO_SECRET:-}
+      - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
+    volumes:
+      - agent_workspace:/home/jenkins/agent
+      - /var/run/docker.sock:/var/run/docker.sock # dev-mode: grants docker access (insecure for prod)
+    networks:
+      - jenkins-network
+    restart: unless-stopped
+    profiles:
+      - distributed
+
 ##############################################################################
 # Persistent volumes
 ##############################################################################
