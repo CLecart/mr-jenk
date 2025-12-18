@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.3.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.3.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+# Notes:
+# - Install pre-commit locally with `pip install pre-commit` and run `pre-commit install`.
+# - Run `pre-commit run --all-files` to audit the repository for secrets.
