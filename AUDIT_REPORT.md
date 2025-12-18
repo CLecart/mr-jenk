@@ -66,8 +66,7 @@ Ces actions rendent l'environnement plus conforme aux bonnes pratiques d'audit :
 ### Actions complémentaires effectuées (2025-12-18)
 
 - Ajout de `artifacts/` dans `.gitignore` pour empêcher l'ajout accidentel d'artefacts d'audit au dépôt.
-- Ajout d'un fichier `.pre-commit-config.yaml` avec des hooks basiques et un hook `detect-secrets` pour aider à empêcher les commits contenant des secrets.
-- Réécriture d'historique pour purger le chemin `artifacts/` de l'historique Git (opération destructive) et force-push vers les remotes. Les backups temporaires ont été créés puis supprimés localement.
+  -- Réécriture d'historique pour purger le chemin `artifacts/` de l'historique Git (opération destructive) et force-push vers les remotes. Les backups temporaires ont été créés puis supprimés localement.
 
 Remarque : ces opérations ont modifié l'historique distant (force-push). Si d'autres contributeurs existaient, ils devraient re-cloner le dépôt. Étant donné que vous êtes le seul contributeur, l'impact est limité.
 
