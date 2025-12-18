@@ -18,7 +18,10 @@ services:
       context: .
       dockerfile: Dockerfile.jenkins
     container_name: jenkins
-    privileged: true
+    # Removed 'privileged: true' to reduce container privileges in production
+    # Keep running as root only if strictly required by your environment.
+    # If you must run as non-root, consider removing `user: root` and
+    # running Jenkins with a dedicated unprivileged UID.
     user: root
     ports:
       - "8080:8080" # Jenkins web interface
