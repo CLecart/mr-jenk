@@ -54,6 +54,15 @@ Rapide audit initial et actions réalisées pendant la session interactive.
   1.  Migrer les agents vers la connexion WebSocket (plus sûre) ou utiliser agents éphémères (Kubernetes/ephemeral).
   2.  Remettre `<slaveAgentPort>-1</slaveAgentPort>` (fermer le port TCP) sur le contrôleur une fois la migration vérifiée.
 
+## Nettoyage et conformité (actions effectuées)
+
+- Les scripts d'init temporaires ajoutés pour déclencher le build (`run-e2e-build.groovy`, `trigger-e2e-build.groovy`) ont été supprimés du contrôleur pour éviter des exécutions non désirées au redémarrage.
+- Le contrôleur Jenkins a été configuré pour fermer le port JNLP TCP : `<slaveAgentPort>-1</slaveAgentPort>` (appliqué et Jenkins redémarré). Cela réduit la surface d'attaque réseau pour les agents JNLP.
+- Le fichier `docker-compose.yml` a été durci : les montages `/var/run/docker.sock` ont été retirés des services `jenkins` et `jenkins-agent` (production). Le montage reste disponible uniquement pour le service `jenkins-agent-pro` et uniquement sous le profil `dev` (usage local/diagnostic). Ceci évite l'exposition du socket Docker en production.
+- Un script de collecte de preuves `scripts/jenkins/collect-evidence.sh` a été ajouté et exécuté ; une archive d'évidence a été générée sous `artifacts/` (à stocker dans un dépôt d'artefacts sécurisé).
+
+Ces actions rendent l'environnement plus conforme aux bonnes pratiques d'audit : réduction des surfaces exposées, suppression des scripts temporaires et séparation claire des modes `dev` vs `prod`.
+
 ## Notes
 
 Ce fichier ne contient aucun secret. Les actions critiques (création de credential, exécution Groovy) doivent être effectuées depuis la console Jenkins par un administrateur pour garantir l'audit.
