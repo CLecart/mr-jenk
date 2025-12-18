@@ -22,12 +22,12 @@ services:
     user: root
     ports:
       - "8080:8080" # Jenkins web interface
-      - "50000:50000" # JNLP agent port
     volumes:
       # Jenkins data persistence
       - jenkins_home:/var/jenkins_home
-      # Docker socket for Docker-in-Docker (image builds)
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Note: docker.sock mount removed for production for improved security.
+      # To run builds that need Docker access locally, use the `jenkins-agent-pro` service
+      # (profile `dev`) or an explicit override that mounts `/var/run/docker.sock`.
     environment:
       # Options JVM pour Jenkins
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=true -Dhudson.security.csrf.GlobalCrumbIssuerConfiguration.DISABLE_CSRF_PROTECTION=false
@@ -59,7 +59,9 @@ services:
       - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
     volumes:
       - agent_workspace:/home/jenkins/agent
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Docker socket mounting removed from this agent for production.
+      # If you need docker access for local testing, run an agent with the `dev` profile
+      # and mount `/var/run/docker.sock` there.
     networks:
       - jenkins-network
     restart: unless-stopped
@@ -90,6 +92,7 @@ services:
     restart: unless-stopped
     profiles:
       - distributed
+      - dev
 
   ##########################################################################
   # Development MongoDB (optional)
