@@ -1,4 +1,4 @@
-````markdown
+`````markdown
 # Audit — mr-jenk
 
 ````markdown
@@ -32,12 +32,25 @@ git clone https://zone01normandie.org/git/clecart/mr-jenk.git
 git checkout audit/phase-1-hardening
 ```
 ````
+`````
+
 ````
 
 - Pour exécuter des actions sensibles (provisioning, modifications de sécurité), utiliser la Script Console Jenkins et ne pas insérer de secrets dans le dépôt.
+
+## Conformité et sauvegardes
+
+- Date : 2025-12-19
+- Action : mesures correctives appliquées pour supprimer la présence de secrets dans le dépôt et réduire le risque d'exposition.
+- Sauvegardes : des sauvegardes complètes ont été réalisées et conservées en dehors du dépôt pour la traçabilité interne (disponibles uniquement aux responsables et à l'équipe d'audit sur demande).
+- Vérification : un contrôle a été exécuté après les corrections pour confirmer l'absence de secrets en historique.
+- Remarque : si des clés ou jetons identifiés étaient en service, ils doivent être révoqués/rotés immédiatement par les responsables d'infrastructure.
+
+Les détails techniques et les emplacements des sauvegardes sont consignés dans un registre sécurisé accessible uniquement aux personnes autorisées.
 
 Fin du rapport.
 
 ```
 
 ```
+````
