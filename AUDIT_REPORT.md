@@ -1,35 +1,43 @@
-```markdown
+````markdown
 # Audit — mr-jenk
 
-Date: 2025-12-18
+````markdown
+# Audit — mr-jenk (phase 1 : hardening)
+
+Date: 2025-12-19
 
 ## Résumé
 
-Nettoyage et consolidation effectués. Le dépôt a été consolidé sur la branche `main`.
+Phase 1 lancée sur la branche `audit/phase-1-hardening` : consolidation terminée, préparation des actions de durcissement et de validation E2E.
 
-## Actions réalisées
+## Objectif de la phase 1
 
-- Consolidation des branches : toutes les branches non nécessaires ont été supprimées et `main` est la branche active.
-- Suppression des sauvegardes temporaires et des clones/miroirs locaux (répertoires `/tmp/*mr-jenk*`).
-- Mise à jour du dépôt principal pour refléter l'état consolidé.
+- Vérifier et valider les réglages de durcissement du contrôleur Jenkins (executors, CSRF, port agents).
+- Provisionner les credentials nécessaires via Jenkins Credentials (par un administrateur) sans stocker de secrets dans le dépôt.
+- Exécuter un test E2E minimal sur un agent isolé pour valider l'image d'agent et les outils.
 
-## Prochaine étape (plan succinct)
+## Plan succinct (actions à exécuter)
 
-1. Valider la configuration Jenkins (durcissement appliqué) depuis la console Jenkins : vérifier `executors=0`, CSRF, et port agent fermé.
-2. Provisionner les credentials nécessaires via Jenkins Credentials (par un administrateur) — documenter les identifiants créés.
-3. Exécuter un job E2E minimal sur un agent isolé pour valider l'image d'agent et les outils requis.
-4. Préparer la phase suivante d'audit et créer une branche dédiée pour son exécution.
+1. Vérifier dans Jenkins : appliquer et valider `scripts/harden-controller.groovy` via la Script Console.
+2. Provisionner les credentials en utilisant `scripts/provision-credentials.groovy` (placeholders) depuis la Script Console ; remplacer les placeholders directement dans la console.
+3. Déployer et exécuter un job E2E minimal sur un agent isolé ; collecter les logs et preuves dans un emplacement sécurisé.
+4. Si la validation est satisfaisante, merger `audit/phase-1-hardening` dans `main` selon le process interne.
 
 ## Recommandation courte
 
-- Recloner le dépôt à partir de l'URL officielle :
+- Recloner le dépôt proprement :
 
 ```bash
 git clone https://zone01normandie.org/git/clecart/mr-jenk.git
+git checkout audit/phase-1-hardening
 ```
+````
+````
 
-- Pour toute opération sensible, exécuter les actions depuis la console Jenkins par un administrateur.
+- Pour exécuter des actions sensibles (provisioning, modifications de sécurité), utiliser la Script Console Jenkins et ne pas insérer de secrets dans le dépôt.
 
 Fin du rapport.
+
+```
 
 ```
