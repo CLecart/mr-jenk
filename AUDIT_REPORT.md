@@ -13,6 +13,13 @@ Nettoyage et consolidation effectués. Le dépôt a été consolidé sur la bran
 - Suppression des sauvegardes temporaires et des clones/miroirs locaux (répertoires `/tmp/*mr-jenk*`).
 - Mise à jour du dépôt principal pour refléter l'état consolidé.
 
+## Prochaine étape (plan succinct)
+
+1. Valider la configuration Jenkins (durcissement appliqué) depuis la console Jenkins : vérifier `executors=0`, CSRF, et port agent fermé.
+2. Provisionner les credentials nécessaires via Jenkins Credentials (par un administrateur) — documenter les identifiants créés.
+3. Exécuter un job E2E minimal sur un agent isolé pour valider l'image d'agent et les outils requis.
+4. Préparer la phase suivante d'audit et créer une branche dédiée pour son exécution.
+
 ## Recommandation courte
 
 - Recloner le dépôt à partir de l'URL officielle :
