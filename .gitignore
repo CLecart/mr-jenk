@@ -56,3 +56,6 @@ temp/
 *.bak
 *.backup
 CONVERSATION_SUMMARY.md
+
+# Audit evidence (local only): do NOT commit
+/evidence/
