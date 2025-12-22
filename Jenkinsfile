@@ -1,3 +1,124 @@
+pipeline {
+  agent any
+  environment {
+    DOCKER_REGISTRY = credentials('docker-registry') ?: 'docker.io'
+    DOCKER_NAMESPACE = env.DOCKER_NAMESPACE ?: 'mycompany'
+    IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${env.GIT_REPO_URL.tokenize('/').last().replaceAll(/\.git$/,'')}"
+  }
+  parameters {
+    choice(name: 'ENV', choices: ['dev','staging','prod'], description: 'Choose deploy environment')
+    booleanParam(name: 'RUN_INTEGRATION_TESTS', defaultValue: false, description: 'Run integration tests?')
+  }
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '25'))
+    timeout(time: 60, unit: 'MINUTES')
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Build') {
+      steps {
+        script {
+          if (fileExists('pom.xml')) {
+            sh 'mvn -B -DskipTests package'
+          } else if (fileExists('gradlew')) {
+            sh './gradlew build -x test'
+          } else {
+            echo 'No recognized Java build file found; skipping compile step.'
+          }
+        }
+      }
+    }
+
+    stage('Unit Tests') {
+      steps {
+        script {
+          if (fileExists('pom.xml')) {
+            sh 'mvn -B test'
+            junit '**/target/surefire-reports/*.xml'
+          } else if (fileExists('frontend/package.json')) {
+            dir('frontend') {
+              sh 'npm ci'
+              sh 'npm test -- --watchAll=false'
+            }
+          } else {
+            echo 'No tests detected.'
+          }
+        }
+      }
+    }
+
+    stage('Docker Build & Push') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin ${DOCKER_REGISTRY}
+            docker build -t ${IMAGE_NAME}:${GIT_COMMIT} .
+            docker tag ${IMAGE_NAME}:${GIT_COMMIT} ${IMAGE_NAME}:latest
+            docker push ${IMAGE_NAME}:${GIT_COMMIT}
+            docker push ${IMAGE_NAME}:latest
+          '''
+        }
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        sshagent(credentials: ['deploy-ssh-key']) {
+          sh '''
+            ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} 'bash -s' <<'EOF'
+              set -euo pipefail
+              docker pull ${IMAGE_NAME}:${GIT_COMMIT}
+              docker stop myapp || true
+              docker rm myapp || true
+              docker run -d --name myapp -p 8080:8080 ${IMAGE_NAME}:${GIT_COMMIT}
+            EOF
+          '''
+        }
+      }
+    }
+
+    stage('Smoke Test') {
+      steps {
+        script {
+          sh 'sleep 5'
+          sh 'curl -f --retry 5 --retry-delay 2 http://localhost:8080/actuator/health || true'
+        }
+      }
+    }
+
+    stage('Post: Notifications') {
+      steps {
+        script {
+          def statusMsg = currentBuild.currentResult
+          withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_WEBHOOK')]) {
+            sh """
+              curl -s -X POST -H 'Content-type: application/json' --data '{"text":"Build ${env.JOB_NAME} #${env.BUILD_NUMBER} => ${statusMsg} (${params.ENV})"}' $SLACK_WEBHOOK
+            """
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    failure {
+      withCredentials([usernamePassword(credentialsId: 'smtp-credentials', usernameVariable: 'SMTP_USER', passwordVariable: 'SMTP_PASS')]) {
+        mail to: env.NOTIFICATION_RECIPIENTS, subject: "Build failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}", body: "See ${env.BUILD_URL}"
+      }
+    }
+    success {
+      echo 'Pipeline finished successfully.'
+    }
+    always {
+      archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+    }
+  }
+}
 /**
  * ============================================================================
  * CI/CD Pipeline for Buy-01 E-commerce Platform
