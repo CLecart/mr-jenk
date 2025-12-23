@@ -1,9 +1,11 @@
 pipeline {
   agent any
   environment {
-    DOCKER_REGISTRY = credentials('docker-registry') ?: 'docker.io'
-    DOCKER_NAMESPACE = env.DOCKER_NAMESPACE ?: 'mycompany'
-    IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${env.GIT_REPO_URL.tokenize('/').last().replaceAll(/\.git$/,'')}"
+        // Use simple literals in declarative `environment` (avoid expressions)
+        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_NAMESPACE = 'mycompany'
+        // IMAGE_NAME is computed at runtime in a script step to avoid complex expressions here
+        IMAGE_NAME = ''
   }
   parameters {
     choice(name: 'ENV', choices: ['dev','staging','prod'], description: 'Choose deploy environment')
