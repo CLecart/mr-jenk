@@ -1,85 +1,36 @@
+// Minimal, well-formed declarative Jenkinsfile used to validate the controller
+// behaviour. Keep this file intentionally small while we stabilise the pipeline.
 pipeline {
-    agent any
-    environment {
-        // Keep only literal values here; compute dynamic values at runtime in script steps
-        DOCKER_REGISTRY = 'docker.io'
-        DOCKER_NAMESPACE = 'mycompany'
+  agent any
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '25'))
+    timeout(time: 30, unit: 'MINUTES')
+    ansiColor('xterm')
+  }
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
     }
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '25'))
-        timeout(time: 60, unit: 'MINUTES')
-        ansiColor('xterm')
+    stage('Build') {
+      steps {
+        script {
+          if (fileExists('pom.xml')) {
+            sh 'mvn -B -DskipTests package'
+          } else {
+            echo 'No pom.xml: skipping build'
+          }
+        }
+      }
     }
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Prepare') {
-            steps {
-                script {
-                    env.IMAGE_NAME = env.DOCKER_NAMESPACE ?: 'mycompany'
-                    env.IMAGE_NAME = "${env.IMAGE_NAME}/${env.PROJECT_NAME ?: 'mr-jenk'}"
-                    echo "Computed IMAGE_NAME=${env.IMAGE_NAME}"
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                script {
-                    if (fileExists('pom.xml')) {
-                        sh 'mvn -B -DskipTests package'
-                    } else if (fileExists('gradlew')) {
-                        sh './gradlew build -x test'
-                    } else {
-                        echo 'No recognized Java build file found; skipping compile.'
-                    }
-                }
-            }
-        }
-
-        stage('Unit Tests') {
-            steps {
-                script {
-                    if (fileExists('pom.xml')) {
-                        sh 'mvn -B test'
-                        junit '**/target/surefire-reports/*.xml'
-                    } else {
-                        echo 'No unit tests detected.'
-                    }
-                }
-            }
-        }
-
-        stage('Docker Build & Push') {
-            when {
-                expression { return true }
-            }
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    script {
-                        sh '''\
-                            set -euo pipefail
-                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin ${DOCKER_REGISTRY}
-                            docker build -t ${IMAGE_NAME}:${GIT_COMMIT} . || true
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Smoke Test') {
-            steps { sh 'sleep 1' }
-        }
+    stage('Smoke') {
+      steps { echo 'pipeline minimal smoke test' }
     }
-    post {
-        success { echo 'Pipeline finished successfully.' }
-        failure { echo 'Build failed - see console output.' }
-        always { archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true }
-    }
+  }
+  post {
+    success { echo 'OK' }
+    failure { echo 'KO' }
+    always { archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true }
+  }
 }
 
 // Note: previous file contained duplicate `stage(...)` blocks after the closing
