@@ -56,3 +56,6 @@ temp/
 *.bak
 *.backup
 CONVERSATION_SUMMARY.md
+
+# Evidence artifacts (audit outputs, console logs)
+evidence/
