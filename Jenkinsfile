@@ -101,123 +101,13 @@ pipeline {
         }
     }
 }
-        /**
-         * ---------------------------------------------------------------------
-         * Stage 1: Checkout
-         * ---------------------------------------------------------------------
-         * Récupère le code source depuis le repository Git
-         */
-        stage('Checkout') {
-            steps {
-                echo "📥 Récupération du code source..."
-                
-                checkout scm
-                
-                script {
-                    // Récupérer les informations du commit
-                    env.GIT_COMMIT_SHORT = sh(
-                        script: 'git rev-parse --short HEAD',
-                        returnStdout: true
-                    ).trim()
-                    
-                    env.GIT_COMMIT_MSG = sh(
-                        script: 'git log -1 --pretty=%B',
-                        returnStdout: true
-                    ).trim()
-                    
-                    env.GIT_AUTHOR = sh(
-                        script: 'git log -1 --pretty=%an',
-                        returnStdout: true
-                    ).trim()
-                }
-                
-                echo "✅ Checkout terminé - Commit: ${env.GIT_COMMIT_SHORT}"
-            }
-        }
 
-        /**
-         * ---------------------------------------------------------------------
-         * Stage 2: Build Backend
-         * ---------------------------------------------------------------------
-         * Compile les services Java avec Maven
-         */
-        stage('Build Backend') {
-            steps {
-                echo "🔨 Construction du backend Java..."
-                
-                        // Build using official Maven Docker image (no Jenkins tool required)
-                        script {
-                            docker.image('maven:3.9.3-eclipse-temurin-17').inside {
-                                sh 'mvn clean package -DskipTests -Dmaven.test.skip=true -B -q'
-                            }
-                        }
+// Note: previous file contained duplicate `stage(...)` blocks after the closing
+// `pipeline { ... }` which breaks the declarative pipeline syntax. The
+// trailing duplicate stages have been removed so the file contains only a
+// single well-formed `pipeline` block. If you want additional stages, add
+// them inside the `stages { ... }` section above.
 
-                        echo "✅ Build backend terminé"
-            }
-            post {
-                success {
-                    // Archiver les JARs produits
-                    archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-                }
-                failure {
-                    echo "❌ Échec du build backend"
-                }
-            }
-        }
-
-        /**
-         * ---------------------------------------------------------------------
-         * Stage 3: Build Frontend
-         * ---------------------------------------------------------------------
-         * Compile l'application Angular
-         */
-        stage('Build Frontend') {
-            steps {
-                echo "🔨 Construction du frontend Angular..."
-                
-                // Use Node.js Docker image for frontend build
-                script {
-                    docker.image('node:20-alpine').inside {
-                        dir('frontend-angular') {
-                            // Installation des dépendances
-                            sh 'npm ci'
-
-                            // Build production
-                            sh 'npm run build -- --configuration=production'
-                        }
-                    }
-                }
-                
-                echo "✅ Build frontend terminé"
-            }
-            post {
-                success {
-                    // Archiver les assets frontend
-                    archiveArtifacts artifacts: 'frontend-angular/dist/**/*', fingerprint: true
-                }
-                failure {
-                    echo "❌ Échec du build frontend"
-                }
-            }
-        }
-
-        /**
-         * ---------------------------------------------------------------------
-         * Stage 4: Test Backend
-         * ---------------------------------------------------------------------
-         * Exécute les tests JUnit pour le backend
-         *
-         * @condition Exécuté si params.RUN_TESTS est true
-         * @reports   Génère des rapports JUnit et JaCoCo (coverage)
-         */
-        stage('Test Backend') {
-            when {
-                expression { params.RUN_TESTS == true }
-            }
-            steps {
-                echo "🧪 Exécution des tests backend..."
-                
-                // Run tests inside Maven Docker image
                 script {
                     docker.image('maven:3.9.3-eclipse-temurin-17').inside {
                         sh 'mvn test -Dmaven.test.failure.ignore=false -B'
