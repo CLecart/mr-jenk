@@ -57,5 +57,5 @@ temp/
 *.backup
 CONVERSATION_SUMMARY.md
 
-# Audit evidence (local only): do NOT commit
-/evidence/
+# Evidence artifacts (audit outputs, console logs)
+evidence/
