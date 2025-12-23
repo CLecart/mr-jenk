@@ -88,11 +88,6 @@ pipeline {
 // single well-formed `pipeline` block. If you want additional stages, add
 // them inside the `stages { ... }` section above.
 
-            }
-        }
-    }
-}
-
 /**
  * =============================================================================
  * FONCTIONS HELPER
