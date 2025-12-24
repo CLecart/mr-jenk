@@ -27,7 +27,7 @@ import hudson.util.Secret
 def instance = Jenkins.getInstance()
 
 // =============================================================================
-// 1. Configuration du Security Realm (Authentification)
+// 1. Security Realm configuration (Authentication)
 // =============================================================================
 
 println "🔐 Configuring authentication..."
@@ -39,31 +39,31 @@ instance.setSecurityRealm(hudsonRealm)
 // Create users (CUSTOMIZE BEFORE USE)
 // NOTE: these credentials must be changed after first login!
 
-// Admin principal
+// Admin account
 if (!hudsonRealm.getAllUsers().find { it.id == 'admin' }) {
     hudsonRealm.createAccount('admin', 'CHANGE_ME_IMMEDIATELY')
     println "✅ User 'admin' created"
 }
 
-// Développeur
+// Developer account
 if (!hudsonRealm.getAllUsers().find { it.id == 'developer' }) {
     hudsonRealm.createAccount('developer', 'CHANGE_ME_IMMEDIATELY')
     println "✅ User 'developer' created"
 }
 
-// Viewer (lecture seule)
+// Viewer (read-only)
 if (!hudsonRealm.getAllUsers().find { it.id == 'viewer' }) {
     hudsonRealm.createAccount('viewer', 'CHANGE_ME_IMMEDIATELY')
     println "✅ User 'viewer' created"
 }
 
 // =============================================================================
-// 2. Configuration de l'Authorization Strategy (Permissions)
+// 2. Authorization Strategy configuration (Permissions)
 // =============================================================================
 
 println "🔐 Configuring permissions..."
 
-// Utiliser Matrix-based security
+// Use Matrix-based security
 def strategy = new GlobalMatrixAuthorizationStrategy()
 
 // --- Permissions Admin ---
@@ -90,7 +90,7 @@ strategy.add(Jenkins.READ, 'viewer')
 strategy.add(Item.READ, 'viewer')
 strategy.add(Item.DISCOVER, 'viewer')
 
-// Appliquer la stratégie
+// Apply the strategy
 instance.setAuthorizationStrategy(strategy)
 
 // =============================================================================
@@ -107,7 +107,7 @@ if (crumbIssuer == null) {
 }
 
 // =============================================================================
-// 4. Configuration des options de sécurité
+// 4. Security options configuration
 // =============================================================================
 
 println "🔐 Configuring security options..."
@@ -119,8 +119,9 @@ jenkins.CLI.get().enabled = false
 instance.injector.getInstance(jenkins.security.s2m.AdminWhitelistRule.class)
     .setMasterKillSwitch(false)
 
+
 // =============================================================================
-// 5. Sauvegarder la configuration
+// 5. Save configuration
 // =============================================================================
 
 instance.save()

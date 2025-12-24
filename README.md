@@ -1,24 +1,24 @@
-# mr-jenk — Scaffold Jenkins CI/CD local et auditable
+# mr-jenk — Jenkins CI/CD scaffold (local, auditable)
 
-Ce dépôt contient un scaffold Jenkins pensé pour le développement local et l'audit.
+This repository contains a Jenkins scaffold designed for local development and audit.
 
-**But** : fournir un environnement reproductible pour développer et valider une pipeline Jenkins en local.
+Goal: provide a reproducible environment to develop and validate a Jenkins pipeline locally.
 
-Ce que contient le dépôt :
+Repository contents:
 
-- `Jenkinsfile` : pipeline déclarative d'exemple.
-- `docker-compose.yml` : configuration pour controller (+ agents optionnels).
-- `scripts/` : helpers (démarrage, provisioning, déclenchement et collecte d'artefacts).
-- `evidence/` : artefacts collectés lors des runs (logs, console, config).
+- `Jenkinsfile`: example declarative pipeline.
+- `docker-compose.yml`: controller configuration (+ optional agents).
+- `scripts/`: helpers (start, provisioning, trigger and artifact collection).
+- `evidence/`: artifacts collected during runs (logs, console, config).
 
-## Prérequis
+## Prerequisites
 
 - Docker >= 20.10
 - Docker Compose >= 2.0
 - Git
-- ~8 GB RAM recommandé pour Jenkins + un agent local
+- ~8 GB RAM recommended for Jenkins + a local agent
 
-Vérifier rapidement :
+Quick checks:
 
 ```bash
 docker --version
@@ -26,16 +26,16 @@ docker compose version
 git --version
 ```
 
-## Démarrage rapide
+## Quick start
 
 ```bash
-git clone <TON_REPO_URL>
+git clone <YOUR_REPO_URL>
 cd mr-jenk
-cp .env.example .env    # adapter .env localement, NE PAS commit
+cp .env.example .env    # adapt .env locally, DO NOT commit
 ./scripts/start-jenkins.sh
 ```
 
-Ouvrir Jenkins : http://localhost:8080
+Open Jenkins: http://localhost:8080
 
 ## Commandes utiles
 
@@ -49,37 +49,37 @@ Ouvrir Jenkins : http://localhost:8080
   ./scripts/clean_evidence.sh --prune-days 0
   ```
 
-  Le script prend une passphrase depuis `.env.local` (ligne unique) ou demande en stdin.
+  The script accepts a single-line passphrase from `.env.local` or prompts on stdin.
 
-  Voir aussi : `AUDIT_REPORT.md` pour les détails d'archivage, emplacement des preuves et commandes de restauration.
+  See also: `AUDIT_REPORT.md` for archival details, evidence locations, and restore commands.
 
-## Déchiffrer une archive
+## Decrypt an archive
 
-Avec `gpg` (si l'archive a l'extension `.gpg`) :
+With `gpg` (for `.gpg` archives):
 
 ```bash
 gpg --batch --yes --output evidence.tar.gz --decrypt evidence-YYYYMMDDTHHMMSS.tar.gz.gpg
 tar -xzf evidence.tar.gz
 ```
 
-Avec `openssl` (si l'archive a l'extension `.enc`) :
+With `openssl` (for `.enc` archives):
 
 ```bash
 openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -pass pass:"<PASSPHRASE>" -in file.tar.gz.enc -out file.tar.gz
 tar -xzf file.tar.gz
 ```
 
-## Bonnes pratiques
+## Best practices
 
-- Ne jamais stocker de secrets dans le dépôt. Utiliser `Jenkins Credentials`.
-- Garder les scripts idempotents pour le provisioning et les exécuter via la console ou l'automatisation.
-- Conserver les archives d'evidence dans un stockage sécurisé et chiffré.
+- Never store secrets in the repository. Use `Jenkins Credentials`.
+- Keep provisioning scripts idempotent and run them from the console or automation.
+- Store evidence archives in secure, encrypted storage.
 
-## Dépannage rapide
+## Troubleshooting
 
-- Voir les logs Jenkins : `docker logs -f jenkins`
-- Redémarrer : `docker compose restart jenkins`
-- S'assurer qu'il y a un exécuteur disponible (controller ou agent online).
+- View Jenkins logs: `docker logs -f jenkins`
+- Restart: `docker compose restart jenkins`
+- Ensure an executor is available (controller or agent online).
 
 ## Licence
 
@@ -87,10 +87,9 @@ MIT — voir `LICENSE`
 
 ---
 
-README simplifié pour `mr-jenk` — orienté développement local et audit.
-docker exec jenkins google-chrome --version
+Simple README for `mr-jenk` — focused on local development and audit.
 
-### Vérifier les prérequis
+### Verify prerequisites
 
 # Docker
 
@@ -289,44 +288,44 @@ MIT — see `LICENSE`.
 
 ## ⚙️ Configuration
 
-### Étape 1 : Setup initial Jenkins
+### Step 1: Initial Jenkins setup
 
-1. Entrer le mot de passe initial
-2. Installer les plugins suggérés
-3. Créer le compte administrateur
-4. Configurer l'URL Jenkins (http://localhost:8080)
+1. Enter the initial admin password
+2. Install the suggested plugins
+3. Create the administrator account
+4. Configure the Jenkins URL (http://localhost:8080)
 
-### Étape 2 : Configurer les credentials
+### Step 2: Configure credentials
 
-Dans **Jenkins > Manage Jenkins > Credentials**, créer :
+In **Jenkins > Manage Jenkins > Credentials**, create:
 
-| ID                   | Type              | Description                  |
-| -------------------- | ----------------- | ---------------------------- |
-| `github-token`       | Secret text       | Personal Access Token GitHub |
-| `docker-credentials` | Username/Password | Docker Registry              |
-| `smtp-credentials`   | Username/Password | SMTP pour emails             |
-| `slack-webhook`      | Secret text       | Webhook URL Slack            |
-| `deploy-ssh-key`     | SSH Private Key   | Clé SSH déploiement          |
+| ID                   | Type              | Description                    |
+| -------------------- | ----------------- | ------------------------------ |
+| `github-token`       | Secret text       | Personal Access Token (GitHub) |
+| `docker-credentials` | Username/Password | Docker Registry                |
+| `smtp-credentials`   | Username/Password | SMTP credentials for emails    |
+| `slack-webhook`      | Secret text       | Slack webhook URL              |
+| `deploy-ssh-key`     | SSH Private Key   | Deployment SSH key             |
 
-Ou exécuter le script dans **Script Console** :
+Or run the script in **Script Console**:
 
 ```groovy
 // Jenkins > Manage Jenkins > Script Console
 // Coller le contenu de scripts/setup-credentials.groovy
 ```
 
-### Étape 3 : Configurer les outils
+### Step 3: Configure tools
 
-Dans **Jenkins > Manage Jenkins > Global Tool Configuration** :
+In **Jenkins > Manage Jenkins > Global Tool Configuration**:
 
-- **Maven** : Nom `Maven-3.9`, installer automatiquement
-- **NodeJS** : Nom `NodeJS-20`, installer automatiquement
+- **Maven**: Name `Maven-3.9`, install automatically
+- **NodeJS**: Name `NodeJS-20`, install automatically
 
-### Étape 4 : Créer le job Pipeline
+### Step 4: Create the Pipeline job
 
-1. **New Item** > Nom: `buy-01-pipeline` > Type: **Pipeline**
-2. **Build Triggers** : Cocher `GitHub hook trigger for GITScm polling`
-3. **Pipeline** :
+1. **New Item** > Name: `buy-01-pipeline` > Type: **Pipeline**
+2. **Build Triggers**: Check `GitHub hook trigger for GITScm polling`
+3. **Pipeline**:
    - Definition: `Pipeline script from SCM`
    - SCM: `Git`
    - Repository URL: `https://github.com/your-username/buy-01.git`
@@ -334,7 +333,7 @@ Dans **Jenkins > Manage Jenkins > Global Tool Configuration** :
    - Branch: `*/main`
    - Script Path: `Jenkinsfile`
 
-### Étape 5 : Configurer le webhook GitHub
+### Step 5: Configure the GitHub webhook
 
 1. GitHub Repository > **Settings** > **Webhooks** > **Add webhook**
 2. Payload URL: `http://your-jenkins-url/github-webhook/`
@@ -343,61 +342,57 @@ Dans **Jenkins > Manage Jenkins > Global Tool Configuration** :
 
 ---
 
-## 🔧 Utilisation
+## Usage
 
-### Lancer un build manuel
+### Run a manual build
 
 1. Jenkins > `buy-01-pipeline` > **Build with Parameters**
-2. Sélectionner les options :
+2. Select options:
    - `ENVIRONMENT`: dev / staging / prod
    - `RUN_TESTS`: true / false
    - `DEPLOY`: true / false
 
-### Commandes Docker utiles
+### Useful Docker commands
 
 ```bash
-# Voir les logs Jenkins
+# View Jenkins logs
 docker logs -f jenkins
 
-# Redémarrer Jenkins
+# Restart Jenkins
 docker compose restart jenkins
 
-# Arrêter Jenkins
+# Stop Jenkins
 docker compose down
 
-# Avec l'agent distribué (bonus)
+# With distributed agent (optional)
 docker compose --profile distributed up -d
 ```
 
-### Structure des paramètres de build
+### Build parameters
 
-| Paramètre               | Défaut  | Description             |
+| Parameter               | Default | Description             |
 | ----------------------- | ------- | ----------------------- |
-| `ENVIRONMENT`           | `dev`   | Environnement cible     |
-| `RUN_TESTS`             | `true`  | Exécuter les tests      |
-| `RUN_INTEGRATION_TESTS` | `false` | Tests d'intégration     |
-| `DEPLOY`                | `true`  | Déployer après build    |
-| `SKIP_DOCKER_BUILD`     | `false` | Ignorer le build Docker |
+| `ENVIRONMENT`           | `dev`   | Target environment      |
+| `RUN_TESTS`             | `true`  | Run unit tests          |
+| `RUN_INTEGRATION_TESTS` | `false` | Run integration tests   |
+| `DEPLOY`                | `true`  | Deploy after build      |
+| `SKIP_DOCKER_BUILD`     | `false` | Skip Docker image build |
 
 ---
 
-## 📁 Structure du projet
+## Project structure
 
-````
-
+```
 mr-jenk/
-├── Jenkinsfile # Pipeline CI/CD principal
-├── docker-compose.yml # Configuration Docker Jenkins
-├── Dockerfile.jenkins # Image Jenkins custom
-├── plugins.txt # Plugins Jenkins pré-installés
-├── .env.example # Template variables d'environnement
-├── .gitignore # Fichiers exclus de Git
-├── README.md # Ce fichier
-├── CONVERSATION_SUMMARY.md # Documentation détaillée
-│
-
-```markdown
-# MR-Jenk — CI/CD Pipeline with Jenkins
+├── Jenkinsfile                 # main CI/CD pipeline
+├── docker-compose.yml          # Docker Compose for Jenkins
+├── Dockerfile.jenkins          # custom Jenkins image
+├── plugins.txt                 # plugins to pre-install
+├── .env.example                # environment variables template
+├── .gitignore                  # files excluded from Git
+├── README.md                   # this file
+├── CONVERSATION_SUMMARY.md     # detailed documentation
+```
 
 [![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-red?logo=jenkins)](https://www.jenkins.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose/)
@@ -441,6 +436,7 @@ This project implements a complete CI/CD pipeline with the following features:
 ---
 
 ## 🏗 Architecture
+
 ```
 
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -464,7 +460,7 @@ This project implements a complete CI/CD pipeline with the following features:
                 │   DEV    │    │ STAGING  │    │   PROD   │
                 └──────────┘    └──────────┘    └──────────┘
 
-````
+```
 
 ---
 
