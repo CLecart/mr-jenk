@@ -1,3 +1,89 @@
+# mr-jenk — Scaffold Jenkins CI/CD local et auditable
+
+Ce dépôt contient un scaffold Jenkins pensé pour le développement local et l'audit.
+
+**But** : fournir un environnement reproductible pour développer et valider une pipeline Jenkins en local.
+
+Ce que contient le dépôt :
+
+- `Jenkinsfile` : pipeline déclarative d'exemple.
+- `docker-compose.yml` : configuration pour controller (+ agents optionnels).
+- `scripts/` : helpers (démarrage, provisioning, déclenchement et collecte d'artefacts).
+- `evidence/` : artefacts collectés lors des runs (logs, console, config).
+
+## Prérequis
+
+- Docker >= 20.10
+- Docker Compose >= 2.0
+- Git
+- ~8 GB RAM recommandé pour Jenkins + un agent local
+
+Vérifier rapidement :
+
+```bash
+docker --version
+docker compose version
+git --version
+```
+
+## Démarrage rapide
+
+```bash
+git clone <TON_REPO_URL>
+cd mr-jenk
+cp .env.example .env    # adapter .env localement, NE PAS commit
+./scripts/start-jenkins.sh
+```
+
+Ouvrir Jenkins : http://localhost:8080
+
+## Commandes utiles
+
+- Lancer un build et collecter les preuves :
+  ```bash
+  ./scripts/trigger_and_collect.sh mr-jenk-pipeline
+  ```
+- Archiver et chiffrer les preuves :
+  ```bash
+  ./scripts/clean_evidence.sh --prune-days 0
+  ```
+  Le script prend une passphrase depuis `.env.local` (ligne unique) ou demande en stdin.
+
+## Déchiffrer une archive
+
+Avec `gpg` (si l'archive a l'extension `.gpg`) :
+
+```bash
+gpg --batch --yes --output evidence.tar.gz --decrypt evidence-YYYYMMDDTHHMMSS.tar.gz.gpg
+tar -xzf evidence.tar.gz
+```
+
+Avec `openssl` (si l'archive a l'extension `.enc`) :
+
+```bash
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -pass pass:"<PASSPHRASE>" -in file.tar.gz.enc -out file.tar.gz
+tar -xzf file.tar.gz
+```
+
+## Bonnes pratiques
+
+- Ne jamais stocker de secrets dans le dépôt. Utiliser `Jenkins Credentials`.
+- Garder les scripts idempotents pour le provisioning et les exécuter via la console ou l'automatisation.
+- Conserver les archives d'evidence dans un stockage sécurisé et chiffré.
+
+## Dépannage rapide
+
+- Voir les logs Jenkins : `docker logs -f jenkins`
+- Redémarrer : `docker compose restart jenkins`
+- S'assurer qu'il y a un exécuteur disponible (controller ou agent online).
+
+## Licence
+
+MIT — voir `LICENSE`
+
+---
+
+README simplifié pour `mr-jenk` — orienté développement local et audit.
 docker exec jenkins google-chrome --version
 
 ### Vérifier les prérequis
