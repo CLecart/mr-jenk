@@ -47,14 +47,38 @@ if [ -z "$PASSPHRASE" ]; then
 fi
 
 encfile="$ARCHIVE_DIR/evidence-$ts.tar.gz.gpg"
-echo "Encrypting archive -> $encfile"
-gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$PASSPHRASE" -o "$encfile" "$tarball"
-rc=$?
+echo "Encrypting archive -> $encfile (prefer gpg, fallback openssl)"
+
+# Try GPG first (non-interactive). If it fails, fall back to OpenSSL.
+if command -v gpg >/dev/null 2>&1; then
+  if [ -n "$PASSPHRASE" ]; then
+    gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$PASSPHRASE" -o "$encfile" "$tarball" 2>/tmp/gpg.err || true
+  else
+    gpg --batch --yes --symmetric --cipher-algo AES256 -o "$encfile" "$tarball" 2>/tmp/gpg.err || true
+  fi
+  rc=$?
+else
+  rc=127
+fi
+
+if [ $rc -ne 0 ]; then
+  echo "GPG encryption failed (rc=$rc). Falling back to OpenSSL AES-256-CBC."
+  encfile_openssl="${encfile%.gpg}.enc"
+  if command -v openssl >/dev/null 2>&1; then
+    openssl enc -aes-256-cbc -salt -pbkdf2 -iter 100000 -pass pass:"$PASSPHRASE" -in "$tarball" -out "$encfile_openssl"
+    rc=$?
+    if [ $rc -ne 0 ]; then
+      echo "OpenSSL encryption failed (rc=$rc)"; rm -f "$tarball"; rm -rf "$TMP_DIR"; exit 2
+    else
+      encfile="$encfile_openssl"
+    fi
+  else
+    echo "Neither gpg nor openssl available; cannot encrypt"; rm -f "$tarball"; rm -rf "$TMP_DIR"; exit 2
+  fi
+fi
+
 rm -f "$tarball"
 rm -rf "$TMP_DIR"
-if [ $rc -ne 0 ]; then
-  echo "Encryption failed (rc=$rc)"; exit 2
-fi
 
 echo "Archive created: $encfile"
 
