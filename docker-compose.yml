@@ -70,7 +70,7 @@ services:
       - jenkins-network
     restart: unless-stopped
     profiles:
-      - distributed # Activer avec: docker-compose --profile distributed up
+      - distributed # Enable with: docker-compose --profile distributed up
 
   ##########################################################################
   # Jenkins Agent (development/provisioned)
