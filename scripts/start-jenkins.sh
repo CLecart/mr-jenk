@@ -9,27 +9,27 @@
 
 set -e
 
-# Couleurs pour les messages
+# Colors for output messages
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Fonctions d'affichage
+# Display helper functions
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 ##############################################################################
-# Vérifications préalables
+# Pre-flight checks
 ##############################################################################
 
 info "Checking prerequisites..."
 
-# Vérifier Docker
-success "Docker et Docker Compose sont installés"
+# Check Docker
+success "Docker and Docker Compose are installed"
 if ! command -v docker &> /dev/null; then
     error "Docker is not installed. Please install: https://docs.docker.com/get-docker/"
 fi
@@ -46,24 +46,26 @@ fi
 success "Docker and Docker Compose are available"
 
 ##############################################################################
-# Démarrage de Jenkins
+# Start Jenkins
 ##############################################################################
 
 info "Starting Jenkins..."
 
-# Se placer dans le répertoire du projet
+# Change to project dir
 cd "$(dirname "$0")/.."
 
-# Builder l'image custom
+# Build custom image
 info "Building custom Jenkins image..."
 $COMPOSE_CMD build --no-cache jenkins
+
+$COMPOSE_CMD up -d jenkins
 
 # Start Jenkins
 info "Starting Jenkins container..."
 $COMPOSE_CMD up -d jenkins
 
 ##############################################################################
-# Attente du démarrage
+# Wait for startup
 ##############################################################################
 
 info "Waiting for Jenkins to become available (this can take 1-2 minutes)..."
@@ -87,7 +89,7 @@ if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
 fi
 
 ##############################################################################
-# Récupération du mot de passe initial
+# Retrieve initial admin password
 ##############################################################################
 
 echo ""
@@ -104,7 +106,7 @@ else
 fi
 
 ##############################################################################
-# Instructions finales
+# Final instructions
 ##############################################################################
 
 echo ""

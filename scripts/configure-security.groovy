@@ -3,12 +3,12 @@
  * Jenkins Security Configuration Script
  * ============================================================================
  *
- * @description Script Groovy pour configurer la sécurité Jenkins automatiquement
- *              À exécuter via: Jenkins > Manage Jenkins > Script Console
+ * @description Groovy script to configure Jenkins security automatically
+ *              Run via: Jenkins > Manage Jenkins > Script Console
  *
  * @author      MR-Jenk Team
  * @version     1.0.0
- * @warning     Exécuter ce script avec précaution !
+ * @warning     Run this script with caution!
  *
  * @see         https://www.jenkins.io/doc/book/security/
  * ============================================================================
@@ -23,45 +23,45 @@ import com.cloudbees.plugins.credentials.impl.*
 import org.jenkinsci.plugins.plaincredentials.impl.*
 import hudson.util.Secret
 
-// Récupérer l'instance Jenkins
+// Get Jenkins instance
 def instance = Jenkins.getInstance()
 
 // =============================================================================
 // 1. Configuration du Security Realm (Authentification)
 // =============================================================================
 
-println "🔐 Configuration de l'authentification..."
+println "🔐 Configuring authentication..."
 
-// Utiliser la base de données interne Jenkins
+// Use Jenkins internal user database
 def hudsonRealm = new HudsonPrivateSecurityRealm(false)
 instance.setSecurityRealm(hudsonRealm)
 
-// Créer les utilisateurs (À PERSONNALISER)
-// NOTE: Ces credentials doivent être changés après le premier login !
+// Create users (CUSTOMIZE BEFORE USE)
+// NOTE: these credentials must be changed after first login!
 
 // Admin principal
 if (!hudsonRealm.getAllUsers().find { it.id == 'admin' }) {
     hudsonRealm.createAccount('admin', 'CHANGE_ME_IMMEDIATELY')
-    println "✅ Utilisateur 'admin' créé"
+    println "✅ User 'admin' created"
 }
 
 // Développeur
 if (!hudsonRealm.getAllUsers().find { it.id == 'developer' }) {
     hudsonRealm.createAccount('developer', 'CHANGE_ME_IMMEDIATELY')
-    println "✅ Utilisateur 'developer' créé"
+    println "✅ User 'developer' created"
 }
 
 // Viewer (lecture seule)
 if (!hudsonRealm.getAllUsers().find { it.id == 'viewer' }) {
     hudsonRealm.createAccount('viewer', 'CHANGE_ME_IMMEDIATELY')
-    println "✅ Utilisateur 'viewer' créé"
+    println "✅ User 'viewer' created"
 }
 
 // =============================================================================
 // 2. Configuration de l'Authorization Strategy (Permissions)
 // =============================================================================
 
-println "🔐 Configuration des permissions..."
+println "🔐 Configuring permissions..."
 
 // Utiliser Matrix-based security
 def strategy = new GlobalMatrixAuthorizationStrategy()
@@ -71,7 +71,7 @@ def strategy = new GlobalMatrixAuthorizationStrategy()
 strategy.add(Jenkins.ADMINISTER, 'admin')
 
 // --- Permissions Developer ---
-// Lecture générale
+// General read
 strategy.add(Jenkins.READ, 'developer')
 strategy.add(Item.READ, 'developer')
 strategy.add(Item.DISCOVER, 'developer')
@@ -81,11 +81,11 @@ strategy.add(Item.BUILD, 'developer')
 strategy.add(Item.CANCEL, 'developer')
 strategy.add(Item.WORKSPACE, 'developer')
 
-// Lecture des credentials (pas modification)
+// Read-only access to credentials (no modification)
 strategy.add(CredentialsProvider.VIEW, 'developer')
 
 // --- Permissions Viewer ---
-// Lecture seule
+// Read-only
 strategy.add(Jenkins.READ, 'viewer')
 strategy.add(Item.READ, 'viewer')
 strategy.add(Item.DISCOVER, 'viewer')
@@ -97,25 +97,25 @@ instance.setAuthorizationStrategy(strategy)
 // 3. Configuration CSRF Protection
 // =============================================================================
 
-println "🔐 Activation de la protection CSRF..."
+println "🔐 Enabling CSRF protection..."
 
-// S'assurer que la protection CSRF est activée
+// Ensure CSRF protection is enabled
 def crumbIssuer = instance.getCrumbIssuer()
 if (crumbIssuer == null) {
     instance.setCrumbIssuer(new DefaultCrumbIssuer(true))
-    println "✅ Protection CSRF activée"
+    println "✅ CSRF protection enabled"
 }
 
 // =============================================================================
 // 4. Configuration des options de sécurité
 // =============================================================================
 
-println "🔐 Configuration des options de sécurité..."
+println "🔐 Configuring security options..."
 
-// Désactiver CLI remoting
+// Disable CLI remoting
 jenkins.CLI.get().enabled = false
 
-// Activer Agent → Master Security
+// Enable Agent → Master security
 instance.injector.getInstance(jenkins.security.s2m.AdminWhitelistRule.class)
     .setMasterKillSwitch(false)
 
@@ -127,14 +127,14 @@ instance.save()
 
 println ""
 println "=============================================================================="
-println "✅ Configuration de sécurité terminée!"
+println "✅ Security configuration complete!"
 println "=============================================================================="
 println ""
-println "⚠️  IMPORTANT: Changez immédiatement les mots de passe par défaut!"
+println "⚠️  IMPORTANT: Change default passwords immediately!"
 println ""
-println "Utilisateurs créés:"
-println "  - admin     (Administrateur complet)"
-println "  - developer (Build et lecture)"
-println "  - viewer    (Lecture seule)"
+println "Created users:"
+println "  - admin     (full administrator)"
+println "  - developer (build + read)"
+println "  - viewer    (read-only)"
 println ""
 println "=============================================================================="

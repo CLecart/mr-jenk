@@ -34,9 +34,9 @@ pipeline {
 }
 
 /**
- * Envoie une notification Slack
+ * Send a Slack notification
  *
- * @param status Le statut du build
+ * @param status the build status
  */
 def sendSlackNotification(String status) {
     def color = [
@@ -56,12 +56,12 @@ def sendSlackNotification(String status) {
     ][status] ?: ':question:'
     
     def message = [
-        'SUCCESS': 'Build réussi!',
-        'FAILURE': 'Build échoué!',
-        'UNSTABLE': 'Build instable',
-        'ABORTED': 'Build annulé',
-        'ROLLBACK': 'Rollback effectué!'
-    ][status] ?: 'Status inconnu'
+        'SUCCESS': 'Build succeeded!',
+        'FAILURE': 'Build failed!',
+        'UNSTABLE': 'Build unstable',
+        'ABORTED': 'Build aborted',
+        'ROLLBACK': 'Rollback executed!'
+    ][status] ?: 'Unknown status'
     
     slackSend(
         tokenCredentialId: 'slack-webhook',
@@ -75,7 +75,7 @@ def sendSlackNotification(String status) {
             *Commit:* ${env.GIT_COMMIT_SHORT} by ${env.GIT_AUTHOR}
             *Environment:* ${params.ENVIRONMENT}
             
-            <${env.BUILD_URL}|Voir le build>
+            <${env.BUILD_URL}|View build>
         """.stripIndent()
     )
 }
