@@ -44,10 +44,14 @@ Ouvrir Jenkins : http://localhost:8080
   ./scripts/trigger_and_collect.sh mr-jenk-pipeline
   ```
 - Archiver et chiffrer les preuves :
+
   ```bash
   ./scripts/clean_evidence.sh --prune-days 0
   ```
+
   Le script prend une passphrase depuis `.env.local` (ligne unique) ou demande en stdin.
+
+  Voir aussi : `AUDIT_REPORT.md` pour les détails d'archivage, emplacement des preuves et commandes de restauration.
 
 ## Déchiffrer une archive
 
