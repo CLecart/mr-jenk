@@ -104,6 +104,7 @@ pipeline {
         // STAGE 4: Automated Tests — Backend (JUnit)
         // =====================================================================
         stage('Test Backend') {
+            agent { label 'jenkins-agent-pro || built-in' }  // Distributed builds
             when {
                 allOf {
                     expression { !params.SKIP_TESTS }
@@ -129,6 +130,7 @@ pipeline {
         // STAGE 5: Automated Tests — Frontend (Karma/Jasmine)
         // =====================================================================
         stage('Test Frontend') {
+            agent { label 'jenkins-agent-pro || built-in' }  // Distributed builds
             when {
                 allOf {
                     expression { !params.SKIP_TESTS }
