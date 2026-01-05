@@ -16,6 +16,7 @@
 
 import jenkins.model.*
 import hudson.security.*
+import hudson.security.csrf.DefaultCrumbIssuer
 import hudson.model.*
 import com.cloudbees.plugins.credentials.*
 import com.cloudbees.plugins.credentials.domains.*
@@ -112,12 +113,27 @@ if (crumbIssuer == null) {
 
 println "🔐 Configuring security options..."
 
-// Disable CLI remoting
-jenkins.CLI.get().enabled = false
+// Disable CLI remoting (if available)
+try {
+    def cli = Jenkins.getInstance().getDescriptor("jenkins.CLI")
+    if (cli != null) {
+        cli.enabled = false
+        println "✅ CLI remoting disabled"
+    }
+} catch (Exception e) {
+    println "⚠️  CLI configuration skipped: ${e.message}"
+}
 
-// Enable Agent → Master security
-instance.injector.getInstance(jenkins.security.s2m.AdminWhitelistRule.class)
-    .setMasterKillSwitch(false)
+// Enable Agent → Master security (if available)
+try {
+    def rule = Jenkins.getInstance().injector?.getInstance(jenkins.security.s2m.AdminWhitelistRule.class)
+    if (rule != null) {
+        rule.setMasterKillSwitch(false)
+        println "✅ Agent→Master security enabled"
+    }
+} catch (Exception e) {
+    println "⚠️  Agent→Master config skipped: ${e.message}"
+}
 
 
 // =============================================================================
