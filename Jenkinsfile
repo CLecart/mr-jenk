@@ -33,6 +33,14 @@ pipeline {
         )
     }
 
+    // =========================================================================
+    // BUILD TRIGGERS — Auto-trigger on push (webhook)
+    // =========================================================================
+    triggers {
+        githubPush()  // Triggered by GitHub webhook on push
+        pollSCM('H/5 * * * *')  // Fallback: poll every 5 min if webhook fails
+    }
+
     options {
         buildDiscarder(logRotator(numToKeepStr: '25'))
         timeout(time: 30, unit: 'MINUTES')
